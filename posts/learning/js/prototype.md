@@ -3,7 +3,7 @@ title: JavaScript的原型
 published: 2026-07-14
 description: "什么是JavaScript的原型"
 image: ""
-tags: [JavaScript, ES6]
+tags: [JavaScript]
 category: "学习"
 draft: false
 ---
@@ -120,6 +120,62 @@ function _instanceof(obj, Func) {
   while (proto !== null) {
     if (proto === Func.prototype) return true;
     proto = Object.getPrototypeOf(proto);
+  }
+  return false;
+}
+```
+
+## 复习
+
+### 问题1
+
+```js
+function Parent() {}
+function Child() {}
+Child.prototype = new Parent();
+
+const c = new Child();
+```
+
+**提问：** `c.constructor === Parent` 是 true 还是 false？为什么？如果想让 `c.constructor === Child`，怎么修复？
+
+**我的回答：** true;因为Child的constructor在Child的prototype上，他的prototype被修改为了new Parent()的一个实例对象，所以constructor得继续往上找，一直找到 `new Parent()` 实例对象链上的constructor，即 `Parent.prototype.constructor`
+
+> 回答**正确**，`new Parent()` 实例自身没有 constructor 属性，所以沿 **\_\_proto__** 找到 `Parent.prototype.constructor`，即 `Parent`
+
+### 问题2
+
+```js
+const obj = Object.create(null);
+```
+
+**提问：** `obj instanceof Object` 返回什么？`obj.__proto__` 是什么？`Object.getPrototypeOf(obj)` 返回什么？——说说为什么。`
+
+**我的回答：** `false;null;null`
+
+> 回答**错误**，正确答案应该为false;undefined;null，因为__proto__是Object.prototype上的一个getter，Object.create(null)创建的就是一个null，null不继承Object.prototype，所以没有这个getter
+
+### 问题3
+
+用时 3 分钟，手写一个 _instanceof。要求：
+
+- 右侧不是函数时抛 TypeError
+- 左侧是 null 或原始类型时返回 false
+- 用 Object.getPrototypeOf 而不是 **\_\_proto__**
+
+```js
+function _instanceof(obj, Func) {
+  if (typeof Func !== "function") {
+    throw new TypeError("Right-hand side of instanceof is not callable");
+  }
+  // 注意 "hello"、123、true、Symbol() 这些原始类型在 instanceof 下也返回 false，所以需要添加非object的判断
+  if (obj === null || (typeof obj !== "object" && typeof obj !== "function")) {
+    return false;
+  }
+  let proto = Object.getPrototypeOf(obj);
+  while (proto !== null) {
+    if (proto === Func.prototype) return true;
+    proto = Object.getPrototypeOf(proto); // ← 注意不要用错变量，不是参数的obj，否则会死循环
   }
   return false;
 }
